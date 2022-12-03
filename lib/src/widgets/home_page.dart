@@ -1,8 +1,8 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+
+import 'video_player_buttons.dart';
+import 'video_player_navigation_panel.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,110 +11,67 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  late TabController _tabController;
-  CameraController? _cameraController;
-  late List<CameraDescription> cameras;
-  final List<XFile> _pictures = [];
-  late Future<void> initCam;
+class _HomePageState extends State<HomePage> {
+  late VideoPlayerController _controller;
+  bool _isControlVisible = true;
+  final String _url =
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
 
   @override
   void initState() {
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
-    initCam = initCamera();
     super.initState();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (!_cameraController!.value.isInitialized) {
-      return;
-    }
-
-    if (state == AppLifecycleState.inactive) {
-      _cameraController!.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      await initCamera();
-    }
+    _controller = VideoPlayerController.network(_url)
+      ..initialize().then((value) {
+        setState(() {});
+      });
+    _controller
+      ..addListener(() {
+        setState(() {});
+      })
+      ..play();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            _tabController.index == 1 ? 'Images gallery' : 'Camera preview'),
+        title: Text(_url.split(r'/').last),
+        centerTitle: true,
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          FutureBuilder(
-            future: initCam,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                return _cameraController!.value.isInitialized
-                    ? CameraPreview(_cameraController!)
-                    : const SizedBox();
-              }
-              return const SizedBox();
-            },
-          ),
-          ListView.builder(
-            itemCount: _pictures.length,
-            itemBuilder: ((context, index) {
-              return Image.file(
-                File(_pictures[index].path),
-                fit: BoxFit.fitWidth,
-              );
-            }),
-          ),
-        ],
+      body: SafeArea(
+        child: Center(
+          child: _controller.value.isInitialized
+              ? AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isControlVisible = !_isControlVisible;
+                      });
+                    },
+                    child: Stack(
+                      children: [
+                        VideoPlayer(_controller),
+                        _isControlVisible
+                            ? VideoPlayerButtons(controller: _controller)
+                            : const SizedBox(),
+                        _isControlVisible
+                            ? VideoPlayerNavigationPanel(
+                                controller: _controller)
+                            : const SizedBox(),
+                      ],
+                    ),
+                  ),
+                )
+              : Container(),
+        ),
       ),
-      floatingActionButton: _tabController.index == 1
-          ? null
-          : FloatingActionButton(
-              onPressed: () async {
-                _pictures.add(await _cameraController!.takePicture());
-                setState(() {});
-              },
-              tooltip: 'Snapshot',
-              child: const Icon(Icons.camera),
-            ),
-      bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _tabController.index,
-          onTap: (value) {
-            setState(() {
-              _tabController.index = value;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.camera),
-              label: 'Camera',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.image),
-              label: 'Gallery',
-            ),
-          ]),
     );
   }
 
   @override
   void dispose() {
-    _cameraController!.dispose();
-    _tabController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> initCamera() async {
-    cameras = await availableCameras();
-    _cameraController = CameraController(cameras[0], ResolutionPreset.max);
-    await _cameraController!.initialize();
-    setState(() {});
   }
 }
