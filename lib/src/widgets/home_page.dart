@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+import 'fo_forward_button.dart';
+import 'go_back_button.dart';
+import 'stop_refresh_button.dart';
+import 'url_field.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -20,7 +25,33 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _makeBar(),
+          Container(
+            height: 115,
+            padding: const EdgeInsets.fromLTRB(20, 45, 20, 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GoBackButton(
+                  callback: _refreshState,
+                  webViewController: _webViewController,
+                ),
+                GoForwardButton(
+                  callback: _refreshState,
+                  webViewController: _webViewController,
+                ),
+                StopRefreshButton(
+                  callback: _refreshState,
+                  webViewController: _webViewController,
+                ),
+                UrlField(
+                  callback: _refreshState,
+                  webViewController: _webViewController,
+                  editingController: _editingController,
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: InAppWebView(
               onLoadStart: (controller, url) {
@@ -31,6 +62,7 @@ class _HomePageState extends State<HomePage> {
               },
               onWebViewCreated: (controller) {
                 _webViewController = controller;
+                setState(() {});
               },
             ),
           ),
@@ -45,143 +77,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _loadUrl() {
-    _webViewController!.loadUrl(
-      urlRequest: URLRequest(
-        url: Uri.parse(
-          _editingController.value.text,
-        ),
-      ),
-    );
-  }
-
-  Widget _makeBar() {
-    return Container(
-      height: 115,
-      padding: const EdgeInsets.fromLTRB(20, 45, 20, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          makeGoBackButton(),
-          makeGoForwardButton(),
-          makeStopRefreshButton(),
-          makeUrlField(),
-        ],
-      ),
-    );
-  }
-
-  Widget makeUrlField() {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width - 200,
-      child: TextField(
-        onEditingComplete: () {
-          _loadUrl();
-          setState(() {
-            FocusScope.of(context).unfocus();
-          });
-        },
-        controller: _editingController,
-        style: const TextStyle(fontWeight: FontWeight.w800),
-        decoration: const InputDecoration(
-          enabledBorder: OutlineInputBorder(),
-          focusedBorder: OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  Widget makeGoBackButton() {
-    return _webViewController != null
-        ? FutureBuilder(
-            future: _webViewController?.canGoBack(),
-            builder: (context, snapshot) {
-              if (snapshot.data != null) {
-                return snapshot.data!
-                    ? IconButton(
-                        onPressed: (() {
-                          _webViewController!.goBack();
-                          setState(() {});
-                        }),
-                        icon: const Icon(Icons.arrow_back),
-                      )
-                    : const Icon(
-                        Icons.arrow_back,
-                        color: Colors.grey,
-                      );
-              }
-              return const Icon(
-                Icons.arrow_back,
-                color: Colors.grey,
-              );
-            })
-        : const Icon(
-            Icons.arrow_back,
-            color: Colors.grey,
-          );
-  }
-
-  Widget makeGoForwardButton() {
-    return _webViewController != null
-        ? FutureBuilder(
-            future: _webViewController?.canGoForward(),
-            builder: (context, snapshot) {
-              if (snapshot.data != null) {
-                return snapshot.data!
-                    ? IconButton(
-                        onPressed: (() {
-                          _webViewController!.goForward();
-                          setState(() {});
-                        }),
-                        icon: const Icon(Icons.arrow_forward),
-                      )
-                    : const Icon(
-                        Icons.arrow_forward,
-                        color: Colors.grey,
-                      );
-              }
-              return const Icon(
-                Icons.arrow_forward,
-                color: Colors.grey,
-              );
-            })
-        : const Icon(
-            Icons.arrow_forward,
-            color: Colors.grey,
-          );
-  }
-
-  Widget makeStopRefreshButton() {
-    return _webViewController != null
-        ? FutureBuilder(
-            future: _webViewController?.isLoading(),
-            builder: (context, snapshot) {
-              if (snapshot.data != null) {
-                return snapshot.data!
-                    ? IconButton(
-                        onPressed: (() {
-                          _webViewController!.stopLoading();
-                          setState(() {});
-                        }),
-                        icon: const Icon(Icons.cancel_outlined),
-                      )
-                    : IconButton(
-                        onPressed: (() {
-                          _webViewController!.reload();
-                          setState(() {});
-                        }),
-                        icon: const Icon(Icons.refresh),
-                      );
-              }
-              return const Icon(
-                Icons.refresh,
-                color: Colors.grey,
-              );
-            })
-        : const Icon(
-            Icons.refresh,
-            color: Colors.grey,
-          );
+  void _refreshState() {
+    setState(() {});
   }
 }
